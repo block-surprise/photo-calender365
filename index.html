@@ -8,103 +8,121 @@
         :root {
             --ios-green: #4cd964;
             --ios-red: #ff3b30;
-            --ios-gray: #1c1c1c;
+            --android-blue: #00e5ff;
+            --android-red: #ff5252;
         }
-        body { margin: 0; background: #000; font-family: -apple-system, sans-serif; color: white; overflow: hidden; }
+        body { margin: 0; background: #000; font-family: -apple-system, Roboto, "Helvetica Neue", sans-serif; color: white; overflow: hidden; }
         
-        /* 設定画面 */
-        #setup { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; box-sizing: border-box; }
-        .logo { font-size: 2.5rem; font-weight: 900; color: var(--ios-green); margin-bottom: 5px; letter-spacing: 2px; }
-        .sub-logo { font-size: 0.8rem; opacity: 0.6; margin-bottom: 30px; }
+        /* --- 設定画面 --- */
+        #setup { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; text-align: center; }
+        .logo { font-size: 2rem; font-weight: 900; color: var(--ios-green); letter-spacing: 4px; }
+        input { width: 80%; background: #222; border: 1px solid #444; color: white; padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center; font-size: 1rem; }
         
-        input { 
-            width: 80%; max-width: 300px; background: #222; border: 1px solid #444; 
-            color: white; padding: 15px; border-radius: 12px; font-size: 1.1rem; 
-            text-align: center; margin-bottom: 20px; outline: none;
-        }
-        input:focus { border-color: var(--ios-green); }
+        .mode-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+        .mode-btn { padding: 10px 20px; border-radius: 20px; border: 1px solid #666; background: none; color: white; cursor: pointer; }
+        .mode-btn.active { background: white; color: black; border-color: white; }
 
-        .timer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 80%; max-width: 300px; }
-        .timer-btn { background: #333; border: none; color: white; padding: 15px; border-radius: 10px; font-size: 1rem; cursor: pointer; }
-        .timer-btn:active { background: #555; }
+        .timer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 80%; }
+        .start-btn { grid-column: span 2; background: var(--ios-green); color: white; border: none; padding: 15px; border-radius: 10px; font-weight: bold; margin-top: 10px; }
 
-        /* 着信画面（iPhone風） */
-        #incoming { display: none; height: 100vh; background: rgba(0,0,0,0.8); text-align: center; padding-top: 100px; backdrop-filter: blur(20px); }
-        .caller-name { font-size: 2.2rem; font-weight: 400; }
-        .caller-sub { font-size: 1.1rem; opacity: 0.8; margin-top: 8px; }
-        
-        .action-btns { position: absolute; bottom: 80px; width: 100%; display: flex; justify-content: space-around; padding: 0 30px; box-sizing: border-box; }
-        .btn-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; font-size: 0.8rem; }
-        .btn-circle { width: 75px; height: 75px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; transition: 0.2s; }
-        .decline { background: var(--ios-red); transform: rotate(135deg); }
-        .accept { background: var(--ios-green); }
+        /* --- iPhone風画面 --- */
+        .ios-screen { display: none; height: 100vh; background: linear-gradient(to bottom, #444, #000); text-align: center; padding-top: 80px; }
+        .ios-caller { font-size: 2.2rem; }
+        .ios-sub { font-size: 1.1rem; opacity: 0.6; margin-top: 10px; }
+        .ios-btns { position: absolute; bottom: 80px; width: 100%; display: flex; justify-content: space-around; }
+        .ios-btn { width: 75px; height: 75px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; }
 
-        /* 通話中画面 */
-        #calling { display: none; height: 100vh; background: #1a1a1a; text-align: center; padding-top: 100px; }
-        .call-timer { font-size: 1.2rem; margin-top: 10px; opacity: 0.9; }
-        .hangup-btn { background: var(--ios-red); width: 70px; height: 70px; border-radius: 50%; position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%) rotate(135deg); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        /* --- Android風画面 --- */
+        .android-screen { display: none; height: 100vh; background: #000; text-align: center; }
+        .and-top { height: 40%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #1a1a1a; }
+        .and-caller { font-size: 1.8rem; }
+        .and-sub { font-size: 0.9rem; color: var(--android-blue); margin-top: 5px; }
+        .and-btns { height: 60%; position: relative; }
+        .and-circle { width: 80px; height: 80px; border-radius: 50%; border: 2px solid white; position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+
+        /* 通話中表示 */
+        .calling-ui { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #111; }
     </style>
 </head>
 <body>
 
     <div id="setup">
-        <div class="logo">SOSO</div>
-        <div class="sub-logo">SMART ESCAPE SYSTEM</div>
-        <input type="text" id="caller-name-input" placeholder="表示名（例：塾の先生）" value="お母さん">
+        <div class="logo">SOSO phone</div>
+        <input type="text" id="name-in" value="お母さん">
+        <div class="mode-selector">
+            <button class="mode-btn active" id="btn-ios" onclick="setMode('ios')">iPhone風</button>
+            <button class="mode-btn" id="btn-and" onclick="setMode('and')">Android風</button>
+        </div>
         <div class="timer-grid">
-            <button class="timer-btn" onclick="startTimer(3)">3秒後</button>
-            <button class="timer-btn" onclick="startTimer(10)">10秒後</button>
-            <button class="timer-btn" onclick="startTimer(30)">30秒後</button>
-            <button class="timer-btn" onclick="startTimer(60)">60秒後</button>
-        </div>
-        <p style="font-size:0.7rem; color:#666; margin-top:30px;">※タイマー後、ポケットに入れて待機してください</p>
-    </div>
-
-    <div id="incoming">
-        <div id="display-name" class="caller-name">お母さん</div>
-        <div class="caller-sub">SOSO phone 着信中...</div>
-        <div class="action-btns">
-            <div class="btn-wrap" onclick="location.reload()">
-                <div class="btn-circle decline">📞</div>
-                拒否
-            </div>
-            <div class="btn-wrap" onclick="acceptCall()">
-                <div class="btn-circle accept">📞</div>
-                応答
-            </div>
+            <button class="mode-btn" onclick="setTimer(5)">5秒</button>
+            <button class="mode-btn" onclick="setTimer(10)">10秒</button>
+            <button class="start-btn" onclick="execute()">タイマースタート</button>
         </div>
     </div>
 
-    <div id="calling">
-        <div id="active-name" class="caller-name">お母さん</div>
-        <div id="call-duration" class="call-timer">00:00</div>
-        <div class="hangup-btn" onclick="location.reload()">📞</div>
+    <div id="ios-inc" class="ios-screen">
+        <div class="ios-caller name-disp">お母さん</div>
+        <div class="ios-sub">モバイル 着信中...</div>
+        <div class="ios-btns">
+            <div class="ios-btn" style="background:var(--ios-red); transform:rotate(135deg);" onclick="reset()">📞</div>
+            <div class="ios-btn" style="background:var(--ios-green);" onclick="goCalling()">📞</div>
+        </div>
+    </div>
+
+    <div id="and-inc" class="android-screen">
+        <div class="and-top">
+            <div class="and-caller name-disp">お母さん</div>
+            <div class="and-sub">着信中 (SOSO phone)</div>
+        </div>
+        <div class="and-btns">
+            <div class="and-circle" onclick="goCalling()">📞</div>
+            <p style="margin-top:100px; opacity:0.5;">上にスワイプで応答</p>
+        </div>
+    </div>
+
+    <div id="calling-ui" class="calling-ui">
+        <div class="name-disp" style="font-size:2rem;">お母さん</div>
+        <div id="clock">00:00</div>
+        <button style="margin-top:100px; width:70px; height:70px; border-radius:50%; background:var(--ios-red); border:none; color:white; font-size:1.5rem; transform:rotate(135deg);" onclick="reset()">📞</button>
     </div>
 
     <script>
-        let seconds = 0;
-        function startTimer(sec) {
-            const name = document.getElementById('caller-name-input').value || "不明な発信者";
-            document.getElementById('display-name').innerText = name;
-            document.getElementById('active-name').innerText = name;
-            
-            document.getElementById('setup').style.display = 'none';
-            setTimeout(() => {
-                document.getElementById('incoming').style.display = 'block';
-                if (navigator.vibrate) navigator.vibrate([1000, 500, 1000, 500, 1000]);
-            }, sec * 1000);
+        let mode = 'ios';
+        let time = 5;
+
+        function setMode(m) {
+            mode = m;
+            document.getElementById('btn-ios').className = m === 'ios' ? 'mode-btn active' : 'mode-btn';
+            document.getElementById('btn-and').className = m === 'and' ? 'mode-btn active' : 'mode-btn';
         }
 
-        function acceptCall() {
-            document.getElementById('incoming').style.display = 'none';
-            document.getElementById('calling').style.display = 'block';
+        function setTimer(t) { time = t; alert(t + "秒後にセットしました。"); }
+
+        function execute() {
+            const name = document.getElementById('name-in').value;
+            document.querySelectorAll('.name-disp').forEach(el => el.innerText = name);
+            document.getElementById('setup').style.display = 'none';
+            
+            setTimeout(() => {
+                document.getElementById(mode + '-inc').style.display = 'block';
+                if (navigator.vibrate) navigator.vibrate([1000, 500, 1000]);
+            }, time * 1000);
+        }
+
+        function goCalling() {
+            document.getElementById('ios-inc').style.display = 'none';
+            document.getElementById('and-inc').style.display = 'none';
+            document.getElementById('calling-ui').style.display = 'flex';
+            let sec = 0;
             setInterval(() => {
-                seconds++;
-                const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-                const s = String(seconds % 60).padStart(2, '0');
-                document.getElementById('call-duration').innerText = `${m}:${s}`;
+                sec++;
+                const m = String(Math.floor(sec/60)).padStart(2,'0');
+                const s = String(sec%60).padStart(2,'0');
+                document.getElementById('clock').innerText = `${m}:${s}`;
             }, 1000);
         }
+
+        function reset() { location.reload(); }
     </script>
 </body>
 </html>
