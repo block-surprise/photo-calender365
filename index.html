@@ -6,72 +6,75 @@
     <title>Photo Calendar Pro</title>
     <style>
         :root {
-            --glass: rgba(255, 255, 255, 0.25);
+            --glass: rgba(255, 255, 255, 0.08); /* さらに透けさせて落ち着いた印象に */
             --accent: #00ffaa;
             --text: #ffffff;
-            --shadow: 0 2px 8px rgba(0,0,0,0.9);
+            --shadow: 0 2px 10px rgba(0,0,0,1);
         }
-        /* 背景が黒くなるのを防ぐため、body自体に初期背景を直接書き込み */
         body, html { 
             margin: 0; padding: 0; min-height: 100%; 
             font-family: sans-serif; 
-            background-color: #333; /* 真っ黒ではなく濃いグレーを予備に */
-            background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80');
-            background-repeat: no-repeat; 
-            background-position: center center;
-            background-size: cover;
-            background-attachment: fixed;
+            background-color: #111; /* 背景が読み込まれる前も暗く */
+            overflow-y: auto;
         }
 
-        /* 念のための別レイヤー（何重にも重ねる） */
+        /* 背景画像レイヤー（明るさを50%に落とす） */
         #bg-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -2; background-size: cover; background-position: center;
+            z-index: -2; 
+            background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80');
+            background-size: cover; background-position: center;
+            filter: brightness(0.5); /* ★ここで明るさを半分に調整 */
         }
 
         .container { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 0; box-sizing: border-box; }
 
         .calendar-card {
-            background: var(--glass); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border-radius: 25px; padding: 20px; width: 90%; max-width: 380px;
-            border: 1px solid rgba(255, 255, 255, 0.4); color: var(--text);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-shadow: var(--shadow);
+            background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-radius: 30px; padding: 25px; width: 90%; max-width: 380px;
+            border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6); text-shadow: var(--shadow);
         }
 
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .nav-btn { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 5px 15px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .nav-btn { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 5px 15px; opacity: 0.8; }
 
-        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
-        .day-label { font-size: 0.7rem; font-weight: bold; color: var(--accent); padding: 5px 0; }
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+        .day-label { font-size: 0.75rem; font-weight: bold; color: var(--accent); padding-bottom: 10px; opacity: 0.9; }
         
         .day {
             aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 1rem; border-radius: 8px; position: relative; cursor: pointer;
+            font-size: 1.1rem; border-radius: 12px; position: relative; cursor: pointer;
         }
-        .day.today { background: var(--accent); color: #000; font-weight: bold; text-shadow: none; }
-        .day.other-month { opacity: 0.3; pointer-events: none; }
+        .day.today { background: var(--accent); color: #000; font-weight: bold; text-shadow: none; box-shadow: 0 0 15px rgba(0,255,170,0.4); }
+        .day.other-month { opacity: 0.2; pointer-events: none; }
         
+        /* 予定のライン表示（暗い背景でより映える） */
         .event-line {
-            width: 70%; height: 3px; background: var(--accent);
-            position: absolute; bottom: 4px; border-radius: 2px;
-            box-shadow: 0 0 5px rgba(0,255,170,0.8);
+            width: 60%; height: 3px; background: var(--accent);
+            position: absolute; bottom: 6px; border-radius: 2px;
+            box-shadow: 0 0 8px var(--accent);
         }
+        .today .event-line { background: #000; box-shadow: none; }
 
         .event-list-card {
-            margin-top: 20px; width: 90%; max-width: 380px;
-            background: rgba(0, 0, 0, 0.5); border-radius: 20px; padding: 15px;
-            color: white; border: 1px solid rgba(255,255,255,0.1);
+            margin-top: 25px; width: 90%; max-width: 380px;
+            background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px);
+            border-radius: 25px; padding: 20px;
+            color: white; border: 1px solid rgba(255,255,255,0.05);
         }
-        .event-list-card h4 { margin: 0 0 10px 0; border-bottom: 1px solid var(--accent); color: var(--accent); }
-        .event-item { font-size: 0.85rem; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .event-list-card h4 { margin: 0 0 15px 0; border-bottom: 1px solid var(--accent); color: var(--accent); font-size: 1rem; }
+        .event-item { font-size: 0.9rem; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
-        .modal-content { background: #1a1a1a; padding: 20px; border-radius: 20px; width: 85%; max-width: 300px; border: 1px solid var(--accent); color: white; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: none; background: #333; color: white; box-sizing: border-box; }
-        .btn { flex: 1; padding: 10px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
+        /* モーダル */
+        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .modal-content { background: #1a1a1a; padding: 25px; border-radius: 25px; width: 85%; max-width: 320px; border: 1px solid var(--accent); color: white; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 10px; border: none; background: #2a2a2a; color: white; box-sizing: border-box; font-size: 1rem; }
+        .btn { flex: 1; padding: 12px; border-radius: 25px; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; }
 
-        .footer { margin-top: 20px; display: flex; gap: 10px; }
-        .tool-btn { font-size: 0.75rem; background: rgba(0,0,0,0.6); border: 1px solid var(--accent); padding: 10px 20px; border-radius: 25px; cursor: pointer; color: white; }
+        .footer { margin-top: 30px; display: flex; gap: 12px; }
+        .tool-btn { font-size: 0.8rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 10px 22px; border-radius: 30px; cursor: pointer; color: white; transition: 0.3s; }
+        .tool-btn:hover { background: rgba(255,255,255,0.2); }
     </style>
 </head>
 <body>
@@ -82,43 +85,46 @@
         <div class="calendar-card">
             <div class="header">
                 <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
-                <h2 id="month-display">----.--</h2>
+                <h2 id="month-display" style="letter-spacing: 2px;">2025.12</h2>
                 <button class="nav-btn" onclick="changeMonth(1)">›</button>
             </div>
             <div class="grid" id="calendar-grid"></div>
         </div>
 
         <div class="event-list-card">
-            <h4>📅 今月の予定</h4>
-            <div id="event-list-items">読み込み中...</div>
+            <h4>📅 今月のスケジュール</h4>
+            <div id="event-list-items">予定なし</div>
         </div>
 
         <div class="footer">
-            <label class="tool-btn">📷 写真を変更<input type="file" id="bg-upload" style="display:none" accept="image/*"></label>
-            <button class="tool-btn" onclick="resetBg()">🔄 初期化</button>
+            <label class="tool-btn">📷 写真変更<input type="file" id="bg-upload" style="display:none" accept="image/*"></label>
+            <button class="tool-btn" onclick="resetBg()">🔄 リセット</button>
         </div>
     </div>
 
     <div id="modal">
         <div class="modal-content">
-            <h3 style="text-align:center">予定を登録</h3>
+            <h3 style="text-align:center; color:var(--accent)">予定を登録</h3>
+            <label style="font-size:0.8rem; opacity:0.6">内容</label>
             <input type="text" id="event-input" placeholder="何をする？">
+            <label style="font-size:0.8rem; opacity:0.6">開始日</label>
             <input type="date" id="start-date">
+            <label style="font-size:0.8rem; opacity:0.6">終了日</label>
             <input type="date" id="end-date">
             <div style="display:flex; gap:10px">
-                <button class="btn" style="background:#444; color:white" onclick="closeModal()">戻る</button>
-                <button class="btn" style="background:var(--accent); color:black" onclick="saveEvent()">保存</button>
+                <button class="btn" style="background:#333; color:white" onclick="closeModal()">キャンセル</button>
+                <button class="btn" style="background:var(--accent); color:black" onclick="saveEvent()">保存する</button>
             </div>
         </div>
     </div>
 
     <script>
+        // 前回のロジックをそのまま継承（localStorageのキーも統一）
         const DEFAULT_URL = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80';
         let currentViewDate = new Date();
-        let events = JSON.parse(localStorage.getItem('cal-final-events') || '{}');
+        let events = JSON.parse(localStorage.getItem('cal-final-v5-events') || '{}');
 
         function applyBg(url) {
-            document.body.style.backgroundImage = `url('${url}')`;
             document.getElementById('bg-layer').style.backgroundImage = `url('${url}')`;
         }
 
@@ -157,10 +163,10 @@
             }
 
             if (monthEvents.length > 0) {
-                monthEvents.forEach(e => {
+                monthEvents.sort((a,b)=>a.day-b.day).forEach(e => {
                     listItems.innerHTML += `<div class="event-item"><b style="color:var(--accent)">${e.day}日:</b> ${e.text}</div>`;
                 });
-            } else { listItems.innerText = '予定なし'; }
+            } else { listItems.innerText = '今月の予定はありません'; }
         }
 
         function changeMonth(n) { currentViewDate.setMonth(currentViewDate.getMonth() + n); render(); }
@@ -171,7 +177,6 @@
             document.getElementById('modal').style.display = 'flex'; 
         }
         function closeModal() { document.getElementById('modal').style.display = 'none'; }
-        
         function saveEvent() {
             const s = document.getElementById('start-date').value, e = document.getElementById('end-date').value, t = document.getElementById('event-input').value;
             let cur = new Date(s), end = new Date(e || s);
@@ -180,7 +185,7 @@
                 if(t.trim()==='') delete events[k]; else events[k] = t;
                 cur.setDate(cur.getDate()+1);
             }
-            localStorage.setItem('cal-final-events', JSON.stringify(events));
+            localStorage.setItem('cal-final-v5-events', JSON.stringify(events));
             closeModal(); render();
         }
 
@@ -189,18 +194,17 @@
             const reader = new FileReader();
             reader.onload = (ev) => {
                 applyBg(ev.target.result);
-                try { localStorage.setItem('cal-final-bg', ev.target.result); } catch(e) { alert("画像が大きすぎます！"); }
+                try { localStorage.setItem('cal-final-v5-bg', ev.target.result); } catch(e) { alert("画像が大きすぎます！"); }
             };
             reader.readAsDataURL(file);
         };
 
         function resetBg() {
-            localStorage.removeItem('cal-final-bg');
+            localStorage.removeItem('cal-final-v5-bg');
             applyBg(DEFAULT_URL);
         }
 
-        // 初期実行
-        const saved = localStorage.getItem('cal-final-bg');
+        const saved = localStorage.getItem('cal-final-v5-bg');
         applyBg(saved || DEFAULT_URL);
         render();
     </script>
