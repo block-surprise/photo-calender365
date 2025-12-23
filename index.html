@@ -10,19 +10,19 @@
             --accent: #00ffaa;
             --text: #ffffff;
         }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: #000; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; overflow: hidden; background: #000; }
 
-        /* 背景レイヤー */
+        /* 初期背景をセット */
         #bg-image {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b') no-repeat center center;
+            background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b');
+            background-repeat: no-repeat; background-position: center center;
             background-size: cover; z-index: -2; transition: 0.5s;
         }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.3); z-index: -1; }
 
         .container { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
-        /* カレンダーカード */
         .calendar-card {
             background: var(--glass); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border-radius: 30px; padding: 20px; width: 85%; max-width: 380px;
@@ -42,33 +42,19 @@
         .day.today { background: var(--accent); color: #000; font-weight: bold; }
         .day.other-month { opacity: 0.2; pointer-events: none; }
         
-        /* 予定がある時のドット */
-        .event-dot {
-            width: 4px; height: 4px; background: var(--accent); border-radius: 50%;
-            position: absolute; bottom: 5px;
-        }
+        .event-dot { width: 4px; height: 4px; background: var(--accent); border-radius: 50%; position: absolute; bottom: 5px; }
         .today .event-dot { background: #000; }
 
-        /* 予定入力モーダル */
-        #modal {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-            z-index: 1000; align-items: center; justify-content: center;
-        }
-        .modal-content {
-            background: #222; padding: 30px; border-radius: 20px; width: 80%; max-width: 300px;
-            text-align: center; border: 1px solid var(--accent);
-        }
-        input#event-input {
-            width: 100%; padding: 12px; margin: 20px 0; border-radius: 10px;
-            border: none; background: #333; color: white; box-sizing: border-box;
-        }
+        #modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-content { background: #222; padding: 30px; border-radius: 20px; width: 80%; max-width: 300px; text-align: center; border: 1px solid var(--accent); }
+        input#event-input { width: 100%; padding: 12px; margin: 20px 0; border-radius: 10px; border: none; background: #333; color: white; box-sizing: border-box; }
         .modal-btns { display: flex; justify-content: space-around; }
         .btn { padding: 10px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
         .save-btn { background: var(--accent); color: black; }
         .cancel-btn { background: #444; color: white; }
 
-        .footer { margin-top: 20px; }
-        .upload-label { font-size: 0.8rem; background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; cursor: pointer; }
+        .footer { margin-top: 20px; display: flex; gap: 10px; }
+        .upload-label, .reset-btn { font-size: 0.7rem; background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px; cursor: pointer; color: white; border: none; }
     </style>
 </head>
 <body>
@@ -87,12 +73,13 @@
         </div>
         <div class="footer">
             <label class="upload-label">🖼 背景を変更<input type="file" id="bg-upload" style="display:none" accept="image/*"></label>
+            <button class="reset-btn" onclick="resetBg()">初期背景に戻す</button>
         </div>
     </div>
 
     <div id="modal">
         <div class="modal-content">
-            <h3 id="modal-date-label" style="margin:0">予定を追加</h3>
+            <h3 id="modal-date-label">予定を追加</h3>
             <input type="text" id="event-input" placeholder="何をする？">
             <div class="modal-btns">
                 <button class="btn cancel-btn" onclick="closeModal()">キャンセル</button>
@@ -105,6 +92,7 @@
         let currentViewDate = new Date();
         let events = JSON.parse(localStorage.getItem('calendar-events') || '{}');
         let selectedDateKey = null;
+        const DEFAULT_BG = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b';
 
         function render() {
             const grid = document.getElementById('calendar-grid');
@@ -131,59 +119,55 @@
             for (let i = 1; i <= lastDate; i++) {
                 const div = document.createElement('div'); div.className = 'day';
                 const dateKey = `${year}-${month}-${i}`;
-                
                 if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) div.classList.add('today');
                 div.innerText = i;
-
-                // 予定があるかチェック
                 if (events[dateKey]) {
                     const dot = document.createElement('div'); dot.className = 'event-dot';
                     div.appendChild(dot);
                 }
-
                 div.onclick = () => openModal(dateKey, i);
                 grid.appendChild(div);
             }
         }
 
         function changeMonth(diff) { currentViewDate.setMonth(currentViewDate.getMonth() + diff); render(); }
-
         function openModal(key, dayNum) {
             selectedDateKey = key;
-            const existingEvent = events[key] || '';
-            document.getElementById('event-input').value = existingEvent;
+            document.getElementById('event-input').value = events[key] || '';
             document.getElementById('modal-date-label').innerText = `${dayNum}日の予定`;
             document.getElementById('modal').style.display = 'flex';
         }
-
         function closeModal() { document.getElementById('modal').style.display = 'none'; }
-
         function saveEvent() {
             const text = document.getElementById('event-input').value;
-            if (text.trim() === '') {
-                delete events[selectedDateKey];
-            } else {
-                events[selectedDateKey] = text;
-            }
+            if (text.trim() === '') delete events[selectedDateKey]; else events[selectedDateKey] = text;
             localStorage.setItem('calendar-events', JSON.stringify(events));
-            closeModal();
-            render();
+            closeModal(); render();
         }
 
-        // 背景写真
+        // 背景画像変更（安定化版）
         document.getElementById('bg-upload').onchange = (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    document.getElementById('bg-image').style.backgroundImage = `url(${ev.target.result})`;
-                    localStorage.setItem('calendar-bg', ev.target.result);
+                    const res = ev.target.result;
+                    document.getElementById('bg-image').style.backgroundImage = `url(${res})`;
+                    try {
+                        localStorage.setItem('calendar-bg', res);
+                    } catch (err) {
+                        alert("画像サイズが大きすぎて保存できません。もう少し小さい画像で試してみて！");
+                    }
                 };
                 reader.readAsDataURL(file);
             }
         };
 
-        // 保存された背景を復元
+        function resetBg() {
+            localStorage.removeItem('calendar-bg');
+            document.getElementById('bg-image').style.backgroundImage = `url(${DEFAULT_BG})`;
+        }
+
         const savedBg = localStorage.getItem('calendar-bg');
         if (savedBg) document.getElementById('bg-image').style.backgroundImage = `url(${savedBg})`;
 
