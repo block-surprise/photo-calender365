@@ -2,33 +2,55 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ARROW | Peer-to-Peer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Arrow View</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-        #setup { position: fixed; inset: 0; background: #111; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        input { padding: 15px; border-radius: 10px; border: 1px solid #333; background: #222; color: #fff; width: 80%; max-width: 300px; text-align: center; font-size: 1.2rem; margin-bottom: 20px; }
-        #arrow { width: 0; height: 0; border-left: 30px solid transparent; border-right: 30px solid transparent; border-bottom: 100px solid #00ffaa; filter: drop-shadow(0 0 15px #00ffaa); transition: transform 0.1s linear; display: none; }
-        #info { margin-top: 20px; text-align: center; }
-        .distance { font-size: 3rem; font-weight: bold; }
-        button { padding: 15px 40px; border-radius: 30px; border: none; background: #00ffaa; color: #000; font-weight: bold; font-size: 1rem; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+        
+        /* カメラ映像を全画面に */
+        #video-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: -1; opacity: 0.6;
+        }
+
+        #setup { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        input { padding: 15px; border-radius: 10px; border: 1px solid #00ffaa; background: #222; color: #fff; width: 80%; max-width: 300px; text-align: center; font-size: 1.2rem; margin-bottom: 20px; }
+        
+        /* 矢印（中央に配置） */
+        #ui-layer { position: relative; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+        #arrow {
+            width: 0; height: 0;
+            border-left: 30px solid transparent; border-right: 30px solid transparent;
+            border-bottom: 100px solid #00ffaa;
+            filter: drop-shadow(0 0 20px #00ffaa);
+            transition: transform 0.1s linear;
+        }
+
+        .hud { position: absolute; bottom: 50px; text-align: center; text-shadow: 0 0 10px #000; }
+        .distance { font-size: 3.5rem; font-weight: 900; color: #00ffaa; }
+        #status { font-size: 0.8rem; letter-spacing: 2px; }
+
+        button { pointer-events: auto; padding: 15px 40px; border-radius: 30px; border: none; background: #00ffaa; color: #000; font-weight: bold; font-size: 1rem; }
     </style>
 </head>
 <body>
 
+    <video id="video-bg" autoplay playsinline></video>
+
     <div id="setup">
-        <h1>ARROW</h1>
-        <p>同じ合言葉を入力して接続</p>
-        <input type="text" id="room-id" placeholder="合言葉（例：abc777）">
-        <button onclick="connect()">接続開始</button>
-        <p style="font-size: 0.7rem; color: #666; margin-top: 20px;">※iPhoneはSafari、AndroidはChrome推奨</p>
+        <h1 style="color:#00ffaa; letter-spacing:5px;">ARROW VIEW</h1>
+        <input type="text" id="target-id" placeholder="相手のIDを入力">
+        <button onclick="init()">システム起動</button>
+        <p id="my-id-display" style="margin-top:20px; font-size:0.8rem;"></p>
     </div>
 
-    <div id="arrow"></div>
-    <div id="info">
-        <div class="distance" id="dist-out">---m</div>
-        <div id="status" style="color: #00ffaa;">接続待機中...</div>
+    <div id="ui-layer">
+        <div id="arrow"></div>
+        <div class="hud">
+            <div id="status">SCANNING...</div>
+            <div class="distance" id="dist-out">---m</div>
+        </div>
     </div>
 
     <script>
@@ -37,36 +59,37 @@
         let targetPos = null;
         let bearing = 0;
 
-        async function connect() {
-            const roomId = document.getElementById('room-id').value;
-            if (!roomId) return alert("合言葉を入力してください");
+        // 初期化：カメラ・位置情報・PeerJS
+        async function init() {
+            // カメラ起動
+            const video = document.getElementById('video-bg');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+                video.srcObject = stream;
+            } catch (e) { console.log("Camera error:", e); }
 
-            // iOSのセンサー許可
+            // センサー許可 (iOS)
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 await DeviceOrientationEvent.requestPermission();
             }
 
-            // Peerオブジェクトの作成（IDを合言葉にする）
-            // 完全にランダムなIDにして、相手にそのIDを知らせる形にします
+            // PeerJS
             peer = new Peer();
-
             peer.on('open', (id) => {
-                document.getElementById('setup').style.display = 'none';
-                document.getElementById('arrow').style.display = 'block';
-                document.getElementById('status').innerText = "あなたのID: " + id;
-                console.log('My ID:', id);
-                
-                // ここで本来は相手のIDを指定して接続しますが、
-                // 「同じ合言葉」で繋ぐために、roomIdを相手のIDとしてconnectを試みます
-                const destId = prompt("相手の画面に表示されているIDを入力してください");
-                if (destId) {
-                    conn = peer.connect(destId);
+                document.getElementById('my-id-display').innerText = "あなたのID: " + id;
+                const tid = document.getElementById('target-id').value;
+                if (tid) {
+                    conn = peer.connect(tid);
                     setupConn();
                 }
+                document.getElementById('setup').style.background = "transparent";
+                document.getElementById('setup').querySelector('h1').style.display = "none";
+                document.getElementById('setup').querySelector('input').style.display = "none";
+                document.getElementById('setup').querySelector('button').style.display = "none";
             });
 
-            peer.on('connection', (connection) => {
-                conn = connection;
+            peer.on('connection', (c) => {
+                conn = c;
                 setupConn();
             });
 
@@ -74,7 +97,10 @@
         }
 
         function setupConn() {
-            document.getElementById('status').innerText = "接続完了！追跡中...";
+            conn.on('open', () => {
+                document.getElementById('status').innerText = "TARGET LOCKED";
+                setInterval(() => { if (conn.open) conn.send(myPos); }, 1000);
+            });
             conn.on('data', (data) => {
                 targetPos = data;
                 updateCompass();
@@ -85,16 +111,14 @@
             navigator.geolocation.watchPosition((pos) => {
                 myPos.lat = pos.coords.latitude;
                 myPos.lng = pos.coords.longitude;
-                if (conn && conn.open) {
-                    conn.send(myPos);
-                }
                 updateCompass();
             }, null, { enableHighAccuracy: true });
 
             window.addEventListener('deviceorientation', (e) => {
                 const heading = e.webkitCompassHeading || (360 - e.alpha);
                 if (heading && bearing) {
-                    document.getElementById('arrow').style.transform = `rotate(${bearing - heading}deg)`;
+                    const rotate = (bearing - heading + 360) % 360;
+                    document.getElementById('arrow').style.transform = `rotate(${rotate}deg)`;
                 }
             }, true);
         }
