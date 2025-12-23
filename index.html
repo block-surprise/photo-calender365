@@ -2,138 +2,123 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>SOSO phone</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ARROW | Peer-to-Peer</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root {
-            --ios-green: #4cd964; --ios-red: #ff3b30;
-            --and-blue: #7fcfff; --and-green: #00e676; --and-red: #ff5252;
-        }
-        body { margin: 0; background: #000; font-family: -apple-system, Roboto, sans-serif; color: white; overflow: hidden; }
-
-        /* 設定画面（ここはアプリ感があってもOK） */
-        #setup { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #111; padding: 20px; }
-        .logo { font-size: 1.5rem; font-weight: bold; color: var(--ios-green); margin-bottom: 20px; }
-        input, select { width: 80%; background: #222; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center; font-size: 1rem; }
-        .start-btn { background: var(--ios-green); color: white; border: none; padding: 15px 50px; border-radius: 30px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-
-        /* --- iOS 17以降 徹底再現 --- */
-        #ios-inc { display: none; height: 100vh; background: linear-gradient(to bottom, #5a5a5a, #000); text-align: center; }
-        .ios-top { padding-top: 100px; }
-        .ios-name { font-size: 2.2rem; font-weight: 500; letter-spacing: -0.5px; }
-        .ios-sub { font-size: 1.1rem; opacity: 0.7; margin-top: 8px; }
-        .ios-footer { position: absolute; bottom: 60px; width: 100%; display: flex; justify-content: space-around; padding: 0 40px; box-sizing: border-box; }
-        .ios-btn-box { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 0.8rem; }
-        .ios-circle { width: 75px; height: 75px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; border: none; }
-
-        /* --- Android (Pixel/Pure Android) 徹底再現 --- */
-        #and-inc { display: none; height: 100vh; background: #1a1c1e; }
-        .and-top { height: 40%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .and-name { font-size: 2rem; font-weight: 400; }
-        .and-sub { font-size: 0.9rem; color: var(--and-blue); margin-top: 5px; }
-        .and-footer { position: absolute; bottom: 80px; width: 100%; display: flex; justify-content: space-around; }
-        .and-circle { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; border: none; }
-
-        /* 通話中（共通） */
-        #calling-ui { display: none; height: 100vh; background: #000; flex-direction: column; align-items: center; padding-top: 100px; }
-        .hangup { width: 72px; height: 72px; border-radius: 50%; background: var(--ios-red); border: none; color: white; font-size: 2rem; transform: rotate(135deg); margin-top: auto; margin-bottom: 80px; }
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        #setup { position: fixed; inset: 0; background: #111; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        input { padding: 15px; border-radius: 10px; border: 1px solid #333; background: #222; color: #fff; width: 80%; max-width: 300px; text-align: center; font-size: 1.2rem; margin-bottom: 20px; }
+        #arrow { width: 0; height: 0; border-left: 30px solid transparent; border-right: 30px solid transparent; border-bottom: 100px solid #00ffaa; filter: drop-shadow(0 0 15px #00ffaa); transition: transform 0.1s linear; display: none; }
+        #info { margin-top: 20px; text-align: center; }
+        .distance { font-size: 3rem; font-weight: bold; }
+        button { padding: 15px 40px; border-radius: 30px; border: none; background: #00ffaa; color: #000; font-weight: bold; font-size: 1rem; }
     </style>
 </head>
 <body>
 
     <div id="setup">
-        <div class="logo">SOSO phone ULTRA</div>
-        <input type="text" id="name-in" value="お母さん" placeholder="発信者の名前">
-        <select id="os-select">
-            <option value="ios">iPhone (iOS 17風)</option>
-            <option value="and">Android (Pixel風)</option>
-        </select>
-        <select id="sound-select">
-            <option value="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg">iPhone Reflection風</option>
-            <option value="https://actions.google.com/sounds/v1/alarms/phone_ringing_low.ogg">Android Pixel風</option>
-            <option value="https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg">レトロな電話音</option>
-        </select>
-        <button class="start-btn" onclick="execute()">10秒後に「本物」が来る</button>
+        <h1>ARROW</h1>
+        <p>同じ合言葉を入力して接続</p>
+        <input type="text" id="room-id" placeholder="合言葉（例：abc777）">
+        <button onclick="connect()">接続開始</button>
+        <p style="font-size: 0.7rem; color: #666; margin-top: 20px;">※iPhoneはSafari、AndroidはChrome推奨</p>
     </div>
 
-    <div id="ios-inc">
-        <div class="ios-top">
-            <div class="ios-name name-disp">お母さん</div>
-            <div class="ios-sub">iPhone</div>
-        </div>
-        <div class="ios-footer">
-            <div class="ios-btn-box" onclick="reset()">
-                <div class="ios-circle" style="background:var(--ios-red); transform:rotate(135deg);">📞</div>
-                <div style="margin-top:5px">拒否</div>
-            </div>
-            <div class="ios-btn-box" onclick="goCalling()">
-                <div class="ios-circle" style="background:var(--ios-green);">📞</div>
-                <div style="margin-top:5px">応答</div>
-            </div>
-        </div>
-    </div>
-
-    <div id="and-inc">
-        <div class="and-top">
-            <div class="and-name name-disp">お母さん</div>
-            <div class="and-sub">着信中 (Google)</div>
-        </div>
-        <div class="and-footer">
-            <div class="and-circle" style="background:var(--and-red); transform:rotate(135deg);" onclick="reset()">📞</div>
-            <div class="and-circle" style="background:var(--and-green);" onclick="goCalling()">📞</div>
-        </div>
-    </div>
-
-    <div id="calling-ui">
-        <div class="name-disp" style="font-size:2.2rem; font-weight:300;">お母さん</div>
-        <div id="clock" style="font-size:1.2rem; margin-top:10px; opacity:0.8;">00:00</div>
-        <button class="hangup" onclick="reset()">📞</button>
+    <div id="arrow"></div>
+    <div id="info">
+        <div class="distance" id="dist-out">---m</div>
+        <div id="status" style="color: #00ffaa;">接続待機中...</div>
     </div>
 
     <script>
-        let ringtone = new Audio();
-        
-        function execute() {
-            // 音の設定
-            ringtone.src = document.getElementById('sound-select').value;
-            ringtone.loop = true;
-            
-            // 名前の反映
-            const name = document.getElementById('name-in').value;
-            document.querySelectorAll('.name-disp').forEach(el => el.innerText = name);
-            
-            const os = document.getElementById('os-select').value;
-            document.getElementById('setup').style.display = 'none';
+        let peer, conn;
+        let myPos = { lat: 0, lng: 0 };
+        let targetPos = null;
+        let bearing = 0;
 
-            // フルスクリーンのリクエスト（本物に見せる最大のコツ）
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen();
+        async function connect() {
+            const roomId = document.getElementById('room-id').value;
+            if (!roomId) return alert("合言葉を入力してください");
+
+            // iOSのセンサー許可
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                await DeviceOrientationEvent.requestPermission();
             }
 
-            setTimeout(() => {
-                document.getElementById(os + '-inc').style.display = 'block';
-                ringtone.play();
-                if (navigator.vibrate) navigator.vibrate([1000, 500, 1000, 500, 1000]);
-            }, 10000);
+            // Peerオブジェクトの作成（IDを合言葉にする）
+            // 完全にランダムなIDにして、相手にそのIDを知らせる形にします
+            peer = new Peer();
+
+            peer.on('open', (id) => {
+                document.getElementById('setup').style.display = 'none';
+                document.getElementById('arrow').style.display = 'block';
+                document.getElementById('status').innerText = "あなたのID: " + id;
+                console.log('My ID:', id);
+                
+                // ここで本来は相手のIDを指定して接続しますが、
+                // 「同じ合言葉」で繋ぐために、roomIdを相手のIDとしてconnectを試みます
+                const destId = prompt("相手の画面に表示されているIDを入力してください");
+                if (destId) {
+                    conn = peer.connect(destId);
+                    setupConn();
+                }
+            });
+
+            peer.on('connection', (connection) => {
+                conn = connection;
+                setupConn();
+            });
+
+            startTracking();
         }
 
-        function goCalling() {
-            ringtone.pause();
-            document.querySelectorAll('[id$="-inc"]').forEach(el => el.style.display = 'none');
-            document.getElementById('calling-ui').style.display = 'flex';
-            let sec = 0;
-            setInterval(() => {
-                sec++;
-                const m = String(Math.floor(sec/60)).padStart(2,'0');
-                const s = String(sec%60).padStart(2,'0');
-                document.getElementById('clock').innerText = `${m}:${s}`;
-            }, 1000);
+        function setupConn() {
+            document.getElementById('status').innerText = "接続完了！追跡中...";
+            conn.on('data', (data) => {
+                targetPos = data;
+                updateCompass();
+            });
         }
 
-        function reset() { 
-            ringtone.pause();
-            if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
-            location.reload(); 
+        function startTracking() {
+            navigator.geolocation.watchPosition((pos) => {
+                myPos.lat = pos.coords.latitude;
+                myPos.lng = pos.coords.longitude;
+                if (conn && conn.open) {
+                    conn.send(myPos);
+                }
+                updateCompass();
+            }, null, { enableHighAccuracy: true });
+
+            window.addEventListener('deviceorientation', (e) => {
+                const heading = e.webkitCompassHeading || (360 - e.alpha);
+                if (heading && bearing) {
+                    document.getElementById('arrow').style.transform = `rotate(${bearing - heading}deg)`;
+                }
+            }, true);
+        }
+
+        function updateCompass() {
+            if (!targetPos || !myPos.lat) return;
+            bearing = calculateBearing(myPos.lat, myPos.lng, targetPos.lat, targetPos.lng);
+            const d = calculateDistance(myPos.lat, myPos.lng, targetPos.lat, targetPos.lng);
+            document.getElementById('dist-out').innerText = Math.floor(d) + "m";
+        }
+
+        function calculateBearing(lat1, lng1, lat2, lng2) {
+            const dL = (lng2 - lng1) * Math.PI / 180;
+            const y = Math.sin(dL) * Math.cos(lat2 * Math.PI / 180);
+            const x = Math.cos(lat1 * Math.PI / 180) * Math.sin(lat2 * Math.PI / 180) - Math.sin(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.cos(dL);
+            return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+        }
+
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371000;
+            const df = (lat2 - lat1) * Math.PI / 180;
+            const dl = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(df/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dl/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
     </script>
 </body>
